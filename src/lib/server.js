@@ -456,7 +456,7 @@ function createServer(options) {
 
 const host = process.env.HOST || "0.0.0.0";
 const port = process.env.PORT || 8080;
-const web_server_url = process.env.PUBLIC_URL || `http://${host}:${port}`;
+const web_server_url = process.env. PUBLIC_URL|| `http://${host}:${port}`;
 
 export default function server() {
 
@@ -464,6 +464,7 @@ export default function server() {
     originBlacklist: [],
     originWhitelist: [],
     requireHeader: [],
+    checkRateLimit: createRateLimitChecker(process.env.CORSANYWHERE_RATELIMIT),
     removeHeaders: [
       "cookie",
       "cookie2",
@@ -543,7 +544,11 @@ function createRateLimitChecker(CORSANYWHERE_RATELIMIT) {
     maxRequestsPerPeriod +
     (periodInMinutes === 1
       ? " per minute"
-      : " per " + periodInMinutes + " minutes")
+      : " per " + periodInMinutes + " minutes") +
+    ". " +
+    "Please self-host CORS Anywhere if you need more quota. " +
+    "See https://github.com/Rob--W/cors-anywhere#demo-server";
+
   return function checkRateLimit(origin) {
     const host = origin.replace(/^[\w\-]+:\/\//i, "");
     if (unlimitedPattern && unlimitedPattern.test(host)) {
@@ -569,10 +574,8 @@ export async function proxyM3U8(url, headers, res) {
   if (!req) {
     return;
   }
-
-  const m3u8 = req.data;
+  const m3u8 = req.data.split('\n').filter(line => !line.startsWith('#EXT-X-MEDIA:TYPE=AUDIO')).join('\n'); 
   if (m3u8.includes("RESOLUTION=")) {
-
     const lines = m3u8.split("\n");
     const newLines = [];
     for (const line of lines) {
